@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mon Cellier</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; background: #faf6f0; min-height: 100vh; }
+  
+  /* Header */
+  .header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:#fff; border-bottom:1px solid #ede4d8; position:sticky; top:0; z-index:10; }
+  .app-title { font-size:20px; font-weight:700; color:#2d1f0e; letter-spacing:0.02em; }
+  .app-subtitle { font-size:12px; color:#9b8a6e; margin-top:2px; }
+  .header-btns { display:flex; gap:8px; }
+  .btn-add { background:#8b3a3a; color:#fff; border:none; border-radius:10px; padding:10px 18px; cursor:pointer; font-size:14px; font-family:Georgia,serif; }
+  .btn-export { background:#f5ede4; color:#4a3728; border:1px solid #ddd4c8; border-radius:10px; padding:10px 12px; cursor:pointer; font-size:16px; }
+  
+  /* Toolbar */
+  .toolbar { display:flex; gap:10px; padding:14px 20px 10px; }
+  .search-input { flex:1; border:1px solid #ddd4c8; border-radius:10px; padding:10px 14px; font-size:14px; background:#fff; font-family:Georgia,serif; color:#2d1f0e; outline:none; }
+  .sort-select { border:1px solid #ddd4c8; border-radius:10px; padding:10px 12px; font-size:13px; background:#fff; font-family:Georgia,serif; color:#4a3728; outline:none; }
+  
+  /* Grid */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:14px; padding:4px 20px 20px; }
+  .card { background:#fff; border-radius:14px; overflow:hidden; border:1px solid #ede4d8; cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; }
+  .card:hover { transform:translateY(-2px); box-shadow:0 4px 16px #8b3a3a18; }
+  .card-thumb { height:140px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .card-thumb img { width:100%; height:100%; object-fit:contain; }
+  .card-body { padding:10px 12px 12px; }
+  .card-millesime { font-size:11px; color:#9b8a6e; font-style:italic; margin-bottom:2px; }
+  .card-nom { font-size:13px; font-weight:700; color:#2d1f0e; line-height:1.3; margin-bottom:3px; }
+  .card-producteur { font-size:11px; color:#7a6652; margin-bottom:2px; }
+  .card-appel { font-size:11px; color:#9b8a6e; margin-bottom:6px; font-style:italic; }
+  .card-qte { font-size:12px; color:#8b3a3a; font-weight:600; }
+  
+  /* Empty */
+  .empty { text-align:center; padding:60px 20px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .empty p { color:#9b8a6e; font-size:14px; }
+
+  /* Fiche */
+  .fiche-hero { display:flex; gap:20px; padding:24px 20px 16px; background:#fff; border-bottom:1px solid #ede4d8; }
+  .fiche-bottle { width:90px; height:220px; border-radius:8px; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .fiche-bottle img { width:100%; height:100%; object-fit:contain; }
+  .fiche-tag { font-size:11px; color:#9b8a6e; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px; }
+  .fiche-titre { font-size:22px; font-weight:700; color:#2d1f0e; line-height:1.2; }
+  .fiche-producteur { font-size:14px; color:#7a6652; margin-top:4px; }
+  .badges { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  .badge { background:#f5ede4; color:#7a6652; border-radius:20px; padding:4px 12px; font-size:12px; }
+  .qte-row { display:flex; align-items:center; gap:14px; margin-top:16px; flex-wrap:wrap; }
+  .qte-box { background:#f5ede4; border-radius:10px; padding:8px 14px; display:flex; align-items:baseline; gap:4px; }
+  .qte-num { font-size:22px; font-weight:700; color:#2d1f0e; }
+  .qte-label { font-size:12px; color:#9b8a6e; }
+  .btn-retirer { background:none; border:1px solid #8b3a3a; color:#8b3a3a; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:13px; font-family:Georgia,serif; }
+  .prix-line { margin-top:8px; font-size:13px; color:#9b8a6e; }
+  .profil-box { margin:16px 20px 0; padding:16px; background:#fdf9f5; border-left:3px solid #c5a882; border-radius:0 8px 8px 0; font-style:italic; font-size:14px; color:#4a3728; line-height:1.7; }
+  .fiche-grid { padding:20px 20px 0; }
+  .fiche-row { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #f0e8de; }
+  .fiche-lbl { font-size:11px; color:#9b8a6e; text-transform:uppercase; letter-spacing:0.06em; min-width:90px; padding-top:1px; flex-shrink:0; }
+  .fiche-val { font-size:14px; color:#2d1f0e; flex:1; line-height:1.5; }
+  .notes-box { margin:16px 20px 0; padding:14px; background:#fdf9f5; border-radius:10px; }
+  .notes-box .fiche-lbl { display:block; margin-bottom:6px; }
+  .notes-text { font-size:14px; color:#4a3728; line-height:1.6; margin-top:6px; }
+  .btn-regen { display:block; margin:20px auto 0; background:none; border:1px solid #c5b49a; color:#7a6652; border-radius:8px; padding:10px 20px; cursor:pointer; font-size:13px; font-family:Georgia,serif; }
+
+  /* Formulaire */
+  .form-section { padding:20px; }
+  .form-label { display:block; font-size:11px; color:#9b8a6e; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; margin-top:14px; }
+  .form-input { width:100%; border:1px solid #ddd4c8; border-radius:10px; padding:11px 14px; font-size:14px; font-family:Georgia,serif; color:#2d1f0e; background:#fff; outline:none; }
+  .form-input:focus { border-color:#c5a882; box-shadow:0 0 0 3px #c5a88220; }
+  textarea.form-input { height:80px; resize:vertical; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .tip-box { background:#f7f3ee; border-radius:8px; padding:10px 14px; font-size:13px; color:#7a6652; margin-top:8px; }
+  .btn-primary { width:100%; background:#8b3a3a; color:#fff; border:none; border-radius:12px; padding:14px; font-size:15px; cursor:pointer; font-family:Georgia,serif; margin-top:16px; }
+  .btn-secondary { flex:1; background:#f5ede4; color:#4a3728; border:none; border-radius:10px; padding:12px; cursor:pointer; font-family:Georgia,serif; font-size:14px; }
+  .btn-danger { flex:1; background:#8b3a3a; color:#fff; border:none; border-radius:10px; padding:12px; cursor:pointer; font-family:Georgia,serif; font-size:14px; }
+
+  /* Photo zone */
+  .photo-zone { display:flex; gap:14px; align-items:flex-start; }
+  .photo-col { display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
+  .photo-thumb { width:90px; height:140px; border:1.5px dashed #c5b49a; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#faf6f0; overflow:hidden; cursor:pointer; }
+  .photo-thumb img { width:100%; height:100%; object-fit:contain; }
+  .photo-comment { width:90px; border:1px solid #ddd4c8; border-radius:10px; padding:8px 10px; font-size:13px; font-family:Georgia,serif; color:#2d1f0e; text-align:center; outline:none; }
+  .photo-comment:focus { border-color:#c5a882; }
+  .photo-comment-lbl { font-size:10px; color:#b0a090; text-align:center; line-height:1.3; }
+  .photo-btns { flex:1; display:flex; flex-direction:column; gap:10px; }
+  .btn-photo { background:#f5ede4; color:#4a3728; border:1px solid #ddd4c8; border-radius:10px; padding:10px 14px; cursor:pointer; font-size:13px; font-family:Georgia,serif; width:100%; }
+  .btn-identify { background:#8b3a3a; color:#fff; border:none; border-radius:10px; padding:10px 14px; cursor:pointer; font-size:13px; font-family:Georgia,serif; width:100%; }
+  .photo-hint { font-size:12px; color:#9b8a6e; line-height:1.5; }
+  .divider { height:1px; background:#ede4d8; margin:16px 0; }
+
+  /* Nav header (fiche/form) */
+  .nav-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:#fff; border-bottom:1px solid #ede4d8; position:sticky; top:0; z-index:10; }
+  .btn-back { background:none; border:none; cursor:pointer; font-size:14px; color:#8b3a3a; font-family:Georgia,serif; }
+  .nav-title { font-size:16px; color:#2d1f0e; font-weight:600; }
+  .nav-actions { display:flex; gap:10px; }
+  .btn-icon { background:#faf6f0; border:1px solid #ede4d8; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:16px; }
+  .btn-icon-del { background:#fdf0f0; }
+
+  /* Modal */
+  .overlay { position:fixed; inset:0; background:#00000066; display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+  .modal { background:#fff; border-radius:16px; padding:24px; max-width:340px; width:100%; }
+  .modal p { font-size:15px; color:#2d1f0e; margin-bottom:16px; }
+  .modal-btns { display:flex; gap:10px; }
+
+  /* Toast */
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); color:#fff; border-radius:10px; padding:12px 20px; font-size:14px; z-index:200; white-space:nowrap; font-family:Georgia,serif; transition:opacity 0.3s; }
+
+  /* Spinner */
+  .spinner { display:flex; align-items:center; gap:8px; color:#9b8a6e; font-size:14px; }
+  .spin-circle { width:16px; height:16px; border:2px solid #e8e0d4; border-top-color:#9b8a6e; border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* Clé API setup */
+  .setup-box { margin:20px; padding:20px; background:#fff; border-radius:16px; border:1px solid #ede4d8; }
+  .setup-box h2 { font-size:17px; color:#2d1f0e; margin-bottom:10px; }
+  .setup-box p { font-size:14px; color:#7a6652; line-height:1.6; margin-bottom:12px; }
+  .setup-box a { color:#8b3a3a; }
+  .setup-saved { color:#3a7d44; font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+const STORAGE_KEY = 'cellier-v1';
+const API_KEY_STORAGE = 'cellier-api-key';
+
+// ---- State ----
+let state = {
+  vins: [],
+  vue: 'liste', // liste | fiche | ajout | edit | setup
+  vinActif: null,
+  form: emptyForm(),
+  recherche: '',
+  tri: 'nom',
+  loading: false,
+  loadingMsg: '',
+  ficheLoading: false,
+  confirmRetrait: null,
+  photoPreview: null,
+  photoBase64: null,
+  photoMime: 'image/jpeg',
+  photoComment: '',
+  photoBackPreview: null,
+  photoBackBase64: null,
+  photoBackMime: 'image/jpeg',
+  apiKey: localStorage.getItem(API_KEY_STORAGE) || '',
+};
+
+function emptyForm() {
+  return { nom:'', producteur:'', appellation:'', region:'', millesime:'', quantite:'', prix:'', notes:'', photo:'', photoBack:'' };
+}
+
+function slugify(str) {
+  return str.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+}
+
+function loadVins() {
+  try { state.vins = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { state.vins = []; }
+}
+
+function saveVins() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.vins));
+}
+
+function couleurVin(vin) {
+  const t = ((vin.cepages||'') + (vin.nom||'')).toLowerCase();
+  if (t.includes('blanc')||t.includes('chardonnay')||t.includes('riesling')||t.includes('sauvignon')||t.includes('viognier')||t.includes('savagnin')) return '#e8d5a3';
+  if (t.includes('rosé')||t.includes('rose')) return '#f0a0a0';
+  return '#8b3a3a';
+}
+
+// ---- API ----
+async function callAPI(body) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': state.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+  return resp.json();
+}
+
+async function identifierParPhoto(base64, mime, comment, base64Back, mimeBack) {
+  const commentLine = comment?.trim() ? `\nNote de l'utilisateur : "${comment.trim()}" — si ce texte contient un nombre, c'est la quantité de bouteilles.` : '';
+  const content = [
+    { type: 'image', source: { type: 'base64', media_type: mime, data: base64 } },
+  ];
+  if (base64Back) {
+    content.push({ type: 'image', source: { type: 'base64', media_type: mimeBack, data: base64Back } });
+    content.push({ type: 'text', text: `Tu es un expert en vins. La première image est l'étiquette avant, la deuxième est l'étiquette arrière. Analyse les deux et réponds UNIQUEMENT avec un objet JSON valide, sans backticks. Structure:\n{"nom":"","producteur":"","appellation":"","region":"","millesime":"","quantite":""}\nSi une info est absente, mets une chaîne vide.${commentLine}` });
+  } else {
+    content.push({ type: 'text', text: `Tu es un expert en vins. Analyse cette photo d'étiquette et réponds UNIQUEMENT avec un objet JSON valide, sans backticks. Structure:\n{"nom":"","producteur":"","appellation":"","region":"","millesime":"","quantite":""}\nSi une info est absente, mets une chaîne vide.${commentLine}` });
+  }
+  const data = await callAPI({ model: 'claude-sonnet-4-5', max_tokens: 500, messages: [{ role: 'user', content }] });
+  const text = data.content?.map(b=>b.text||'').join('') || '';
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+
+async function enrichirViaAPI(nom, producteur, appellation, millesime) {
+  const data = await callAPI({
+    model: 'claude-sonnet-4-5', max_tokens: 1000,
+    messages: [{ role: 'user', content: `Tu es un expert en vins avec une connaissance approfondie du marché québécois et de la SAQ. Pour ce vin, fournis une fiche technique en JSON.\nVin: ${nom}\nProducteur: ${producteur||'inconnu'}\nAppellation: ${appellation||'inconnue'}\nMillésime: ${millesime||'non précisé'}\n\nPour le champ "prix_saq", indique le prix de vente habituel à la SAQ en dollars canadiens (nombre seul, sans symbole). Si tu n'es pas certain du prix exact, donne une estimation réaliste basée sur le type et l'appellation du vin. Laisse vide seulement si tu n'as vraiment aucune idée.\n\nRéponds UNIQUEMENT avec un objet JSON valide, sans backticks:\n{"region":"","cepages":"","vinification":"","elevage":"","profil":"","service":"","garde":"","accords":"","prix_saq":""}` }]
+  });
+  const text = data.content?.map(b=>b.text||'').join('') || '';
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+
+// ---- Helpers ----
+function fileToBase64(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Lecture échouée'));
+    r.readAsDataURL(file);
+  });
+}
+
+function showToast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.style.background = type==='err' ? '#c0392b' : '#3a7d44';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function setLoading(on, msg='') {
+  state.loading = on; state.loadingMsg = msg;
+}
+
+// ---- Render ----
+function render() {
+  const app = document.getElementById('app');
+  if (state.vue === 'liste') app.innerHTML = renderListe();
+  else if (state.vue === 'fiche') app.innerHTML = renderFiche();
+  else if (state.vue === 'ajout' || state.vue === 'edit') app.innerHTML = renderForm();
+  else if (state.vue === 'setup') app.innerHTML = renderSetup();
+  bindEvents();
+}
+
+function wineIconSVG(size=32, color='currentColor') {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none"><path d="M10 4h12M10 4c0 6-4 8-4 14a10 10 0 0020 0c0-6-4-8-4-14" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="28" x2="16" y2="22" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+}
+
+function spinnerHTML(msg='Consultation des archives…') {
+  return `<span class="spinner"><span class="spin-circle"></span>${msg}</span>`;
+}
+
+// ---- Vue LISTE ----
+function renderListe() {
+  const total = state.vins.reduce((s,b)=>s+(b.quantite||0),0);
+  const q = state.recherche.toLowerCase();
+  let filtres = state.vins.filter(b => !q || (b.nom||'').toLowerCase().includes(q) || (b.producteur||'').toLowerCase().includes(q) || (b.appellation||'').toLowerCase().includes(q) || (b.region||'').toLowerCase().includes(q));
+  filtres = filtres.sort((a,b) => {
+    if (state.tri==='nom') return (a.nom||'').localeCompare(b.nom||'');
+    if (state.tri==='millesime') return (b.millesime||0)-(a.millesime||0);
+    if (state.tri==='region') return (a.region||'').localeCompare(b.region||'');
+    if (state.tri==='quantite') return b.quantite-a.quantite;
+    return 0;
+  });
+
+  const apiWarning = !state.apiKey ? `<div style="margin:12px 20px 0;padding:10px 14px;background:#fff8e1;border-radius:8px;font-size:13px;color:#7a6000;border:1px solid #ffe082;">⚠️ Clé API non configurée — <button onclick="goSetup()" style="background:none;border:none;color:#8b3a3a;cursor:pointer;font-size:13px;font-family:Georgia,serif;text-decoration:underline;">configurer</button></div>` : '';
+
+  const cartes = filtres.length === 0
+    ? `<div class="empty">${wineIconSVG(40,'#c5b49a')}<p>${state.recherche ? 'Aucun résultat' : 'Votre cave est vide. Commencez par ajouter une bouteille.'}</p></div>`
+    : `<div class="grid">${filtres.map(vin => {
+        const c = couleurVin(vin);
+        const img = vin.photo ? `<img src="${vin.photo}" alt="${vin.nom}">` : wineIconSVG(32, c);
+        return `<div class="card" onclick="openFiche('${vin.id}')">
+          <div class="card-thumb" style="background:linear-gradient(160deg,${c}18,#f5ede433)">${img}</div>
+          <div class="card-body">
+            ${vin.millesime?`<div class="card-millesime">${vin.millesime}</div>`:''}
+            <div class="card-nom">${vin.nom}</div>
+            ${vin.producteur?`<div class="card-producteur">${vin.producteur}</div>`:''}
+            ${(vin.appellation||vin.region)?`<div class="card-appel">${vin.appellation||vin.region}</div>`:''}
+            <div class="card-qte">${vin.quantite} ${vin.quantite===1?'btl':'btls'}</div>
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+
+  return `
+    <div class="header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="color:#8b3a3a">${wineIconSVG()}</div>
+        <div><div class="app-title">Mon Cellier</div><div class="app-subtitle">${state.vins.length} ${state.vins.length===1?'cuvée':'cuvées'} · ${total} bouteilles</div></div>
+      </div>
+      <div class="header-btns">
+        <button class="btn-export" onclick="exporterCave()" title="Copier pour Claude">📋</button>
+        <button class="btn-export" onclick="goSetup()" title="Paramètres clé API">⚙️</button>
+        <button class="btn-add" onclick="goAjout()">+ Ajouter</button>
+      </div>
+    </div>
+    ${apiWarning}
+    <div class="toolbar">
+      <input class="search-input" placeholder="Rechercher…" value="${state.recherche}" oninput="onSearch(this.value)">
+      <select class="sort-select" onchange="onTri(this.value)">
+        <option value="nom" ${state.tri==='nom'?'selected':''}>Nom</option>
+        <option value="millesime" ${state.tri==='millesime'?'selected':''}>Millésime</option>
+        <option value="region" ${state.tri==='region'?'selected':''}>Région</option>
+        <option value="quantite" ${state.tri==='quantite'?'selected':''}>Quantité</option>
+      </select>
+    </div>
+    ${cartes}`;
+}
+
+// ---- Vue FICHE ----
+function renderFiche() {
+  const vin = state.vins.find(b=>b.id===state.vinActif?.id) || state.vinActif;
+  if (!vin) { state.vue='liste'; return renderListe(); }
+  const c = couleurVin(vin);
+  const img = vin.photo ? `<img src="${vin.photo}" alt="${vin.nom}">` : `<div style="color:${c};opacity:0.6">${wineIconSVG()}</div>`;
+  const imgBack = vin.photoBack ? `<div style="width:70px;height:170px;border-radius:6px;overflow:hidden;flex-shrink:0;border:1px solid #ede4d8"><img src="${vin.photoBack}" alt="étiquette arrière" style="width:100%;height:100%;object-fit:contain"></div>` : '';
+  const rows = [
+    {label:'Cépages',val:vin.cepages},{label:'Vinification',val:vin.vinification},
+    {label:'Élevage',val:vin.elevage},{label:'Service',val:vin.service},
+    {label:'Garde',val:vin.garde},{label:'Accords',val:vin.accords}
+  ].filter(r=>r.val).map(r=>`<div class="fiche-row"><span class="fiche-lbl">${r.label}</span><span class="fiche-val">${r.val}</span></div>`).join('');
+
+  const modal = state.confirmRetrait === vin.id ? `
+    <div class="overlay">
+      <div class="modal">
+        <p>Retirer une bouteille de <strong>${vin.nom}</strong> ?${vin.quantite===1?' Il n\'en restera aucune — elle sera supprimée de la cave.':''}</p>
+        <div class="modal-btns">
+          <button class="btn-danger" onclick="confirmerRetrait('${vin.id}')">Confirmer</button>
+          <button class="btn-secondary" onclick="annulerRetrait()">Annuler</button>
+        </div>
+      </div>
+    </div>` : '';
+
+  return `
+    <div class="nav-header">
+      <button class="btn-back" onclick="retourListe()">← Cave</button>
+      <div class="nav-actions">
+        <button class="btn-icon" onclick="goEdit('${vin.id}')">✏️</button>
+        <button class="btn-icon btn-icon-del" onclick="supprimerVin('${vin.id}')">🗑️</button>
+      </div>
+    </div>
+    <div class="fiche-hero">
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <div class="fiche-bottle" style="background:radial-gradient(ellipse at 40% 30%,${c}22,#1a0f0833)">${img}</div>
+        ${imgBack}
+      </div>
+      <div style="flex:1">
+        <div class="fiche-tag">${vin.appellation||vin.region||'—'}</div>
+        <div class="fiche-titre">${vin.nom}</div>
+        ${vin.producteur?`<div class="fiche-producteur">${vin.producteur}</div>`:''}
+        <div class="badges">
+          ${vin.millesime?`<span class="badge">${vin.millesime}</span>`:''}
+          ${vin.region?`<span class="badge" style="background:#f0ebe4">${vin.region}</span>`:''}
+        </div>
+        <div class="qte-row">
+          <div class="qte-box"><span class="qte-num">${vin.quantite}</span><span class="qte-label">${vin.quantite===1?'bouteille':'bouteilles'}</span></div>
+          <button class="btn-retirer" onclick="demanderRetrait('${vin.id}')">Retirer une bouteille</button>
+        </div>
+        ${vin.prix?`<div class="prix-line">Prix payé : <strong style="color:#2d1f0e">${vin.prix} $CA</strong></div>`:''}
+        ${vin.prix_saq?`<div class="prix-line" style="margin-top:4px">Prix SAQ estimé : <strong style="color:#2d1f0e">${vin.prix_saq} $CA</strong> <span style="font-size:11px;color:#b0a090">(indicatif)</span></div>`:''}
+      </div>
+    </div>
+    ${vin.profil?`<div class="profil-box">${vin.profil}</div>`:''}
+    <div class="fiche-grid">${rows}</div>
+    ${vin.notes?`<div class="notes-box"><span class="fiche-lbl">Notes personnelles</span><div class="notes-text">${vin.notes}</div></div>`:''}
+    <button class="btn-regen" onclick="regenererFiche('${vin.id}')" ${state.ficheLoading?'disabled':''}>
+      ${state.ficheLoading ? spinnerHTML('Actualisation…') : '↻ Actualiser la fiche technique'}
+    </button>
+    ${modal}`;
+}
+
+// ---- Vue FORMULAIRE ----
+function renderForm() {
+  const isEdit = state.vue === 'edit';
+  const f = state.form;
+  const photoImg = state.photoPreview ? `<img src="${state.photoPreview}" alt="étiquette">` : `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:#c5b49a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.5"/></svg><span style="font-size:11px">Avant</span></div>`;
+  const photoBackImg = state.photoBackPreview ? `<img src="${state.photoBackPreview}" alt="étiquette arrière">` : `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;color:#c5b49a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.5"/></svg><span style="font-size:11px">Arrière</span></div>`;
+
+  return `
+    <div class="nav-header">
+      <button class="btn-back" onclick="retourDepuisForm()"">← Retour</button>
+      <span class="nav-title">${isEdit?'Modifier':'Nouvelle bouteille'}</span>
+    </div>
+    <div class="form-section">
+      <div class="photo-zone">
+        <div class="photo-col">
+          <div class="photo-thumb" onclick="document.getElementById('fileInput').click()">${photoImg}</div>
+          <input class="photo-comment" id="photoComment" placeholder="ex: 3" value="${state.photoComment}" oninput="state.photoComment=this.value">
+          <div class="photo-comment-lbl">quantité</div>
+        </div>
+        <div class="photo-col">
+          <div class="photo-thumb" onclick="document.getElementById('fileInputBack').click()">${photoBackImg}</div>
+          <div class="photo-comment-lbl" style="margin-top:4px">étiquette arrière</div>
+        </div>
+        <div class="photo-btns">
+          <button class="btn-photo" onclick="document.getElementById('fileInput').click()">📷 ${state.photoPreview?'Changer avant':'Photo avant'}</button>
+          <button class="btn-photo" onclick="document.getElementById('fileInputBack').click()">📷 ${state.photoBackPreview?'Changer arrière':'Photo arrière'}</button>
+          ${state.photoBase64 ? `<button class="btn-identify" id="btnIdentify" onclick="handleReconnaissance()">${state.loading && state.loadingMsg==='Analyse de l\'étiquette…' ? spinnerHTML('Analyse…') : '✦ Identifier le vin'}</button>` : ''}
+          <p class="photo-hint">Photographiez les deux étiquettes — Claude lira les informations combinées.</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handlePhotoChange(this, 'front')">
+        <input type="file" id="fileInputBack" accept="image/*" style="display:none" onchange="handlePhotoChange(this, 'back')">
+      </div>
+      <div class="divider"></div>
+      <label class="form-label">Nom du vin *</label>
+      <input class="form-input" id="f_nom" value="${f.nom}" placeholder="ex. Château-Chalon">
+      <label class="form-label">Producteur</label>
+      <input class="form-input" id="f_producteur" value="${f.producteur}" placeholder="ex. Marcel Cabelier">
+      <label class="form-label">Appellation</label>
+      <input class="form-input" id="f_appellation" value="${f.appellation}" placeholder="ex. Château-Chalon AOC">
+      <label class="form-label">Région (optionnel)</label>
+      <input class="form-input" id="f_region" value="${f.region}" placeholder="ex. Jura">
+      <div class="grid-2">
+        <div><label class="form-label">Millésime</label><input class="form-input" id="f_millesime" type="number" value="${f.millesime}" placeholder="2017"></div>
+        <div><label class="form-label">Quantité</label><input class="form-input" id="f_quantite" type="number" value="${f.quantite}" placeholder="3"></div>
+      </div>
+      <label class="form-label">Prix payé ($CA)</label>
+      <input class="form-input" id="f_prix" type="number" step="0.01" value="${f.prix}" placeholder="45.00">
+      <label class="form-label">Notes personnelles</label>
+      <textarea class="form-input" id="f_notes" placeholder="Impressions, contexte d'achat…">${f.notes}</textarea>
+      <div class="tip-box">💡 La fiche technique (cépages, vinification, élevage, accords) sera enrichie automatiquement par Claude.</div>
+      <button class="btn-primary" id="btnSubmit" onclick="${isEdit?'handleEdit()':'handleAjout()'}" ${state.loading?'disabled':''}>
+        ${state.loading && state.loadingMsg!=="Analyse de l'étiquette…" ? spinnerHTML(state.loadingMsg) : isEdit?'Enregistrer les modifications':'Ajouter à la cave'}
+      </button>
+    </div>`;
+}
+
+// ---- Vue SETUP ----
+function renderSetup() {
+  return `
+    <div class="nav-header">
+      <button class="btn-back" onclick="retourListe()">← Cave</button>
+      <span class="nav-title">Clé API</span>
+    </div>
+    <div class="setup-box">
+      <h2>Configurer la clé API Anthropic</h2>
+      <p>Pour identifier les étiquettes et enrichir les fiches, l'app a besoin d'une clé API Anthropic.</p>
+      <p>1. Va sur <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
+         2. Connecte-toi et va dans <strong>API Keys</strong><br>
+         3. Clique <strong>Create Key</strong> et copie la clé</p>
+      <label class="form-label">Colle ta clé ici</label>
+      <input class="form-input" id="apiKeyInput" type="password" value="${state.apiKey}" placeholder="sk-ant-...">
+      <button class="btn-primary" onclick="sauvegarderCle()">Sauvegarder</button>
+    </div>`;
+}
+
+// ---- Events ----
+function bindEvents() {}
+
+function collectForm() {
+  state.form.nom = document.getElementById('f_nom')?.value || '';
+  state.form.producteur = document.getElementById('f_producteur')?.value || '';
+  state.form.appellation = document.getElementById('f_appellation')?.value || '';
+  state.form.region = document.getElementById('f_region')?.value || '';
+  state.form.millesime = document.getElementById('f_millesime')?.value || '';
+  state.form.quantite = document.getElementById('f_quantite')?.value || '';
+  state.form.prix = document.getElementById('f_prix')?.value || '';
+  state.form.notes = document.getElementById('f_notes')?.value || '';
+}
+
+function goAjout() { state.form = emptyForm(); state.photoPreview=null; state.photoBase64=null; state.photoComment=''; state.photoBackPreview=null; state.photoBackBase64=null; state.vue='ajout'; render(); }
+function goSetup() { state.vue='setup'; render(); }
+function retourListe() { state.vue='liste'; state.vinActif=null; render(); }
+function retourDepuisForm() { state.vue = state.vinActif ? 'fiche' : 'liste'; state.form=emptyForm(); state.photoPreview=null; state.photoBase64=null; state.photoComment=''; state.photoBackPreview=null; state.photoBackBase64=null; render(); }
+function onSearch(v) { state.recherche=v; render(); }
+function onTri(v) { state.tri=v; render(); }
+
+function openFiche(id) { state.vinActif = state.vins.find(b=>b.id===id); state.vue='fiche'; render(); }
+function goEdit(id) {
+  const vin = state.vins.find(b=>b.id===id);
+  state.form = {...vin, quantite: String(vin.quantite)};
+  state.photoPreview = vin.photo || null;
+  state.photoBackPreview = vin.photoBack || null;
+  state.photoBase64 = null;
+  state.photoBackBase64 = null;
+  state.vinActif = vin;
+  state.vue = 'edit'; render();
+}
+
+async function handlePhotoChange(input, side) {
+  const file = input.files?.[0]; if (!file) return;
+  const preview = URL.createObjectURL(file);
+  const b64 = await fileToBase64(file);
+  const mime = file.type || 'image/jpeg';
+  if (side === 'back') {
+    state.photoBackPreview = preview;
+    state.photoBackBase64 = b64;
+    state.photoBackMime = mime;
+  } else {
+    state.photoPreview = preview;
+    state.photoBase64 = b64;
+    state.photoMime = mime;
+  }
+  render();
+}
+
+async function handleReconnaissance() {
+  if (!state.photoBase64) return;
+  collectForm();
+  state.loading = true; state.loadingMsg = "Analyse de l'étiquette…"; render();
+  try {
+    const infos = await identifierParPhoto(state.photoBase64, state.photoMime, state.photoComment, state.photoBackBase64, state.photoBackMime);
+    state.form.nom = infos.nom || state.form.nom;
+    state.form.producteur = infos.producteur || state.form.producteur;
+    state.form.appellation = infos.appellation || state.form.appellation;
+    state.form.region = infos.region || state.form.region;
+    state.form.millesime = infos.millesime || state.form.millesime;
+    state.form.quantite = infos.quantite || state.form.quantite;
+    showToast('Étiquette reconnue ✓');
+  } catch(e) { showToast('Erreur: ' + (e?.message || String(e)).substring(0,80), 'err'); }
+  state.loading = false; render();
+}
+
+async function handleAjout() {
+  collectForm();
+  if (!state.form.nom) return showToast('Le nom est requis', 'err');
+  state.loading=true; state.loadingMsg='Enrichissement de la fiche…'; render();
+  let fiche = {};
+  try { fiche = await enrichirViaAPI(state.form.nom, state.form.producteur, state.form.appellation, state.form.millesime); } catch {}
+  state.loading=false;
+  const id = slugify(state.form.nom)+'-'+Date.now();
+  const nouveau = { id, ...state.form, ...fiche,
+    nom:state.form.nom, producteur:state.form.producteur||fiche.producteur||'',
+    appellation:state.form.appellation||fiche.appellation||'',
+    region:state.form.region||fiche.region||'',
+    millesime:state.form.millesime, quantite:parseInt(state.form.quantite)||1,
+    prix:state.form.prix, prix_saq:fiche.prix_saq||'', notes:state.form.notes,
+    photo: state.photoPreview || state.form.photo || '',
+    photoBack: state.photoBackPreview || state.form.photoBack || '' };
+  state.vins.push(nouveau); saveVins();
+  state.form=emptyForm(); state.photoPreview=null; state.photoBase64=null; state.photoComment='';
+  state.photoBackPreview=null; state.photoBackBase64=null;
+  state.vue='liste'; render(); showToast('Bouteille ajoutée ✓');
+}
+
+async function handleEdit() {
+  collectForm();
+  if (!state.form.nom) return showToast('Le nom est requis', 'err');
+  state.loading=true; state.loadingMsg='Mise à jour de la fiche…'; render();
+  let fiche = {};
+  try { fiche = await enrichirViaAPI(state.form.nom, state.form.producteur, state.form.appellation, state.form.millesime); } catch {}
+  state.loading=false;
+  state.vins = state.vins.map(b => b.id!==state.vinActif.id ? b : {
+    ...b, ...fiche, nom:state.form.nom,
+    producteur:state.form.producteur||fiche.producteur||b.producteur,
+    appellation:state.form.appellation||fiche.appellation||b.appellation,
+    region:state.form.region||fiche.region||b.region,
+    millesime:state.form.millesime, quantite:parseInt(state.form.quantite)||b.quantite,
+    prix:state.form.prix, notes:state.form.notes,
+    photo: state.photoPreview || state.form.photo || b.photo,
+    photoBack: state.photoBackPreview || state.form.photoBack || b.photoBack });
+  saveVins();
+  state.vinActif = state.vins.find(b=>b.id===state.vinActif.id);
+  state.vue='fiche'; render(); showToast('Fiche mise à jour ✓');
+}
+
+function demanderRetrait(id) { state.confirmRetrait=id; render(); }
+function annulerRetrait() { state.confirmRetrait=null; render(); }
+function confirmerRetrait(id) {
+  const vin = state.vins.find(b=>b.id===id);
+  if (!vin) return;
+  if (vin.quantite <= 1) {
+    state.vins = state.vins.filter(b=>b.id!==id);
+    state.vue='liste'; state.vinActif=null;
+  } else {
+    state.vins = state.vins.map(b=>b.id===id?{...b,quantite:b.quantite-1}:b);
+    state.vinActif = state.vins.find(b=>b.id===id);
+  }
+  state.confirmRetrait=null; saveVins(); render(); showToast('Bouteille retirée');
+}
+
+function supprimerVin(id) {
+  if (!confirm('Supprimer ce vin de la cave ?')) return;
+  state.vins = state.vins.filter(b=>b.id!==id);
+  saveVins(); state.vue='liste'; state.vinActif=null; render(); showToast('Vin supprimé');
+}
+
+async function regenererFiche(id) {
+  const vin = state.vins.find(b=>b.id===id); if (!vin) return;
+  state.ficheLoading=true; render();
+  try {
+    const fiche = await enrichirViaAPI(vin.nom, vin.producteur, vin.appellation, vin.millesime);
+    state.vins = state.vins.map(b=>b.id===id?{...b,...fiche}:b);
+    state.vinActif = state.vins.find(b=>b.id===id);
+    showToast('Fiche actualisée ✓');
+  } catch { showToast('Erreur de connexion', 'err'); }
+  state.ficheLoading=false; render();
+}
+
+function exporterCave() {
+  if (!state.vins.length) return showToast('La cave est vide', 'err');
+  const total = state.vins.reduce((s,b)=>s+(b.quantite||0),0);
+  const lignes = state.vins.map(v => {
+    const p = [`${v.quantite}x ${v.nom}`];
+    if (v.producteur) p.push(v.producteur);
+    if (v.millesime) p.push(v.millesime);
+    if (v.appellation||v.region) p.push(v.appellation||v.region);
+    if (v.cepages) p.push(`(${v.cepages})`);
+    return p.join(' — ');
+  });
+  const texte = `Mon cellier (${state.vins.length} cuvées, ${total} bouteilles) :\n\n` + lignes.join('\n');
+  navigator.clipboard.writeText(texte).then(
+    () => showToast('Cave copiée dans le presse-papier ✓'),
+    () => showToast('Copie échouée', 'err')
+  );
+}
+
+function sauvegarderCle() {
+  const val = document.getElementById('apiKeyInput')?.value?.trim();
+  if (!val) return showToast('Entre une clé valide', 'err');
+  state.apiKey = val;
+  localStorage.setItem(API_KEY_STORAGE, val);
+  showToast('Clé sauvegardée ✓');
+  setTimeout(() => { state.vue='liste'; render(); }, 1000);
+}
+
+// ---- Init ----
+loadVins();
+if (!state.apiKey) state.vue = 'setup';
+render();
+</script>
+</body>
+</html>
